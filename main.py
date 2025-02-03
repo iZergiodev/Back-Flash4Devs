@@ -9,6 +9,10 @@ from models.user import User as UserModel
 from fastapi.encoders import jsonable_encoder  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = FastAPI(
     title='Flash4Devs API',
