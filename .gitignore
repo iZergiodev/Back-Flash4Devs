@@ -1,0 +1,4 @@
+__pycache__
+.venv
+bd/__pycache__
+models/__pycache__
