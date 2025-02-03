@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Depends # type: ignore
+from fastapi import FastAPI, Request, HTTPException, Depends, status # type: ignore
 from pydantic import BaseModel
 import uvicorn  # type: ignore
 from user_jwt import createToken, validateToken
@@ -58,10 +58,19 @@ def read_root():
 @app.post('/api/register', tags=['Auth'])
 def register(user: UserRegister):
     db = Session()
+
+    existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
+    if existing_user:
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El correo electrónico ya está registrado"
+        )
+
     newUser = UserModel(**user.dict())
     db.add(newUser)
     db.commit()
-    return JSONResponse(status_code=201, content=jsonable_encoder({"message": "User created successfully"}))
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder({"message": "User created successfully"}))
 
 
 @app.post('/api/login', tags=['Auth'])
