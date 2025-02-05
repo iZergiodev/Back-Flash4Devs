@@ -6,7 +6,6 @@ click==8.1.8
 cryptography==3.4.8
 dbus-python==1.2.18
 distro==1.7.0
-distro-info==1.1+ubuntu0.1
 dnspython==2.7.0
 email_validator==2.2.0
 exceptiongroup==1.2.2
