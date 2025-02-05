@@ -14,9 +14,9 @@ base_dir = os.path.dirname(os.path.realpath(__file__))
 data_base_url = os.getenv("DATABASE_URL")
 print(data_base_url)
 
-engine = create_engine(data_base_url, echo = True)
+engine = create_engine(data_base_url, connect_args={'check_same_thread': False})
 
-Session = sessionmaker(bind=engine)
+SessionLocal = sessionmaker(autocommit=False ,autoflush=False ,bind=engine)
 
 
 Base = declarative_base()

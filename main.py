@@ -1,15 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, Depends, status # type: ignore
-from pydantic import BaseModel
+from fastapi import FastAPI, Request, HTTPException # type: ignore
 import uvicorn  # type: ignore
-from user_jwt import createToken, validateToken
-from fastapi.responses import JSONResponse  # type: ignore
 from fastapi.security import HTTPBearer  # type: ignore
-from bd.database import Session, engine, Base
-from models.user import User as UserModel
-from fastapi.encoders import jsonable_encoder  # type: ignore
+from bd.database import engine, Base
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 import os
 from dotenv import load_dotenv
+from routers import auth
 
 load_dotenv()
 
@@ -21,6 +17,8 @@ app = FastAPI(
 )
 
 Base.metadata.create_all(bind=engine)
+
+app.include_router(auth.router)
 
 origins = [
     "http://localhost:5173",
@@ -36,61 +34,13 @@ app.add_middleware(
 )
 
 
-class BearerJWT(HTTPBearer):
-    async def __call__(self, request:Request):
-        auth = await super().__call__(request)
-        data = validateToken(auth.credentials)
-        if data['email'] != 'sergio@sergio.com':
-            raise HTTPException(status_code=403, detail = 'Credenciales incorrectas')
 
-
-class UserRegister(BaseModel):
-    email: str
-    password: str
-    name: str
-    last_name: str
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
 
 
 @app.get('/', tags=['inicio'])
 def read_root():
     return {'Hello': 'world'}
 
-
-@app.post('/api/register', tags=['Auth'])
-def register(user: UserRegister):
-    db = Session()
-
-    existing_user = db.query(UserModel).filter(UserModel.email == user.email).first()
-    if existing_user:
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico ya está registrado"
-        )
-
-    newUser = UserModel(**user.dict())
-    db.add(newUser)
-    db.commit()
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder({"message": "User created successfully"}))
-
-
-@app.post('/api/login', tags=['Auth'])
-def login(user: UserLogin):
-    db = Session()
-    try:
-        data= db.query(UserModel).filter(UserModel.email == user.email).first()
-        if not data:
-            return JSONResponse(status_code=404, content={'message': 'Email o contraseña incorrecta'})
-        if data.email == user.email and data.password == user.password:
-            token: str = createToken(user.dict())
-            return JSONResponse(status_code=200 ,content={'Token': token})
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrecta")
-    finally:
-        db.close()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8000))
