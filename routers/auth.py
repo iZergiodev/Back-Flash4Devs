@@ -10,7 +10,7 @@ from bd.database import SessionLocal
 from passlib.context import CryptContext
 from typing import Annotated
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 
@@ -103,8 +103,8 @@ class LoginUserRequest(BaseModel):
 
 
 @router.post('/login', response_model=Token)
-def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()] ,db: db_dependency):
-        user = authenticate_user(form_data.username, form_data.password, db)
+def login(form_data:LoginUserRequest ,db: db_dependency):
+        user = authenticate_user(form_data.email, form_data.password, db)
         if not user:
              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
         token = create_token(user.email, user.id, timedelta(minutes=20) )
