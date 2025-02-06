@@ -46,6 +46,7 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+
 def authenticate_user(email: str, password: str, db):
      user = db.query(UserModel).filter(UserModel.email == email).first()
      if not user:
@@ -54,8 +55,8 @@ def authenticate_user(email: str, password: str, db):
           return False
      return user
 
-def create_token(email: str, id: int, expires_delta: timedelta):
-     encode = {'sub': email, 'id': id}
+def create_token(email: str, id: int, name: str, expires_delta: timedelta):
+     encode = {'sub': email, 'id': id, 'name':name}
      expires = datetime.now(timezone.utc) + expires_delta
      encode.update({'exp': expires})
      return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -71,7 +72,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
      except JWTError:
           raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
           
-
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 @router.post('/register', status_code=status.HTTP_201_CREATED)
 def register(db: db_dependency ,create_user_request: CreateUserRequest):
@@ -101,12 +102,18 @@ class LoginUserRequest(BaseModel):
     password: str
 
 
-
+     
 @router.post('/login', response_model=Token)
 def login(form_data:LoginUserRequest ,db: db_dependency):
         user = authenticate_user(form_data.email, form_data.password, db)
         if not user:
              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
-        token = create_token(user.email, user.id, timedelta(minutes=20) )
+        token = create_token(user.email, user.id, user.name, timedelta(minutes=20) )
         return {'access_token': token, 'token_type': 'bearer'}
-            
+
+@router.get('/user/{user_id}')
+def get_user_by_id(user: user_dependency, db: db_dependency, user_id: int):
+     if user is None:
+          raise HTTPException(status_code=401, detail='Authentification failed')
+     user_from_database = db.query(UserModel).filter(UserModel.id == user_id).first()
+     return user_from_database
