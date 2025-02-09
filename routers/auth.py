@@ -55,8 +55,8 @@ def authenticate_user(email: str, password: str, db):
           return False
      return user
 
-def create_token(email: str, id: int, name: str, expires_delta: timedelta):
-     encode = {'sub': email, 'id': id, 'name':name}
+def create_token(id: int, expires_delta: timedelta):
+     encode = {'id': id}
      expires = datetime.now(timezone.utc) + expires_delta
      encode.update({'exp': expires})
      return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -64,22 +64,20 @@ def create_token(email: str, id: int, name: str, expires_delta: timedelta):
 async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
      try:
           payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-          email: str = payload.get('sub')
           id: int = payload.get('id')
-          if email is None or id is None:
+          if id is None:
                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
-          return {'email': email, 'id': id}
+          return {'id': id}
      except JWTError:
           raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
           
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
-@router.post('/register', status_code=status.HTTP_201_CREATED)
+@router.post('/register', status_code=status.HTTP_201_CREATED, summary="Register a User")
 def register(db: db_dependency ,create_user_request: CreateUserRequest):
 
     existing_user = db.query(UserModel).filter(UserModel.email == create_user_request.email).first()
     if existing_user:
-
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El correo electrónico ya está registrado"
@@ -101,17 +99,16 @@ class LoginUserRequest(BaseModel):
     email: str
     password: str
 
-
      
-@router.post('/login', response_model=Token)
+@router.post('/login', response_model=Token, summary="Login User")
 def login(form_data:LoginUserRequest ,db: db_dependency):
         user = authenticate_user(form_data.email, form_data.password, db)
         if not user:
              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
-        token = create_token(user.email, user.id, user.name, timedelta(minutes=20) )
+        token = create_token(user.id, timedelta(minutes=20) )
         return {'access_token': token, 'token_type': 'bearer'}
 
-@router.get('/user/{user_id}')
+@router.get('/user/{user_id}', summary="Get a User by ID")
 def get_user_by_id(user: user_dependency, db: db_dependency, user_id: int):
      if user is None:
           raise HTTPException(status_code=401, detail='Authentification failed')

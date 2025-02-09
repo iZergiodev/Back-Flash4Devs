@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 import os
 from dotenv import load_dotenv
 from routers import auth
+from routers import flashcards
+
 
 load_dotenv()
 
@@ -19,6 +21,7 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
+app.include_router(flashcards.router)
 
 origins = [
     "http://localhost:5173",
@@ -32,8 +35,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
 
 
 
