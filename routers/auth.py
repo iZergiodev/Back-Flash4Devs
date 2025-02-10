@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta, datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, File, HTTPException, UploadFile, status, Depends
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse 
@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from dotenv import load_dotenv
+import cloudinary
+from cloudinary.uploader import upload
 
 load_dotenv()
 
@@ -114,3 +116,31 @@ def get_user_by_id(user: user_dependency, db: db_dependency, user_id: int):
           raise HTTPException(status_code=401, detail='Authentification failed')
      user_from_database = db.query(UserModel).filter(UserModel.id == user_id).first()
      return user_from_database
+
+
+cloudinary.config(
+     cloud_name="dxkrekuq7",
+     api_key="162572424771848",
+     api_secret="_GtgsZGFvtz08uJcj-LdK5pLIWU"
+)
+
+@router.post('/upload/')
+async def upload_profile_image(
+    user: user_dependency,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        result = upload(file.file)
+        image_url = result["secure_url"]
+
+        user_from_db = db.query(UserModel).filter(UserModel.id == user["id"]).first()
+        if not user_from_db:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        user_from_db.profile_image = image_url
+        db.commit()
+
+        return {"url": image_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

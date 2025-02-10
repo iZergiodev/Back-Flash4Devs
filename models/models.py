@@ -11,6 +11,7 @@ class User(Base):
     name = Column(String)
     last_name = Column(String)
     level = Column(String)
+    profile_image = Column(String)
      
 
 class Flashcard(Base):
