@@ -27,8 +27,7 @@ if not GOOGLE_API_KEY:
     raise ValueError("La variable de entorno GOOGLE_API_KEY no está definida.")
 
 genai.configure(api_key=GOOGLE_API_KEY)
-
-
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 app.include_router(auth.router)
 app.include_router(flashcards.router)
@@ -51,4 +50,19 @@ app.add_middleware(
 @app.get('/', tags=['inicio'])
 def read_root():
     return {'Hello': 'world'}
+
+
+class ChatRequest(BaseModel):
+    system_prompt: str
+    user_message: str
+
+@app.post("/chat/")
+async def chat_with_gemini(request: ChatRequest):
+    try:
+        full_prompt = f"{request.system_prompt}\n\nUsuario: {request.user_message}"
+
+        response = model.generate_content(full_prompt)
+        return {"generated_text": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 

@@ -32,23 +32,6 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-model = genai.GenerativeModel('gemini-2.0-flash')
-
-class ChatRequest(BaseModel):
-    system_prompt: str
-    user_message: str
-
-@router.post("/chat/")
-async def chat_with_gemini(request: ChatRequest):
-    try:
-        full_prompt = f"{request.system_prompt}\n\nUsuario: {request.user_message}"
-
-        response = model.generate_content(full_prompt)
-        return {"generated_text": response.text}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 class CreateCardRequest(BaseModel):
     question: str
     category: str
