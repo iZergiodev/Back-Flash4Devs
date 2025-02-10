@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 
@@ -29,6 +30,23 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+
+
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+class ChatRequest(BaseModel):
+    system_prompt: str
+    user_message: str
+
+@router.post("/chat/")
+async def chat_with_gemini(request: ChatRequest):
+    try:
+        full_prompt = f"{request.system_prompt}\n\nUsuario: {request.user_message}"
+
+        response = model.generate_content(full_prompt)
+        return {"generated_text": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class CreateCardRequest(BaseModel):
@@ -51,7 +69,7 @@ def get_flashcards_by_category(db: db_dependency ,create_card_request: CreateCar
     db.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder({"message": "Flashcard created successfully"}))
 
-@router.get('/{id}', status_code=status.HTTP_200_OK,  summary="Get a flashcard by ID")
+@router.get('/by-id/{id}', status_code=status.HTTP_200_OK,  summary="Get a flashcard by ID")
 def register(db: db_dependency ,id: str):
 
     cards_by_category = db.query(FlashCardModel).filter(FlashCardModel.id == id).all()
@@ -59,7 +77,7 @@ def register(db: db_dependency ,id: str):
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(cards_by_category))
 
 
-@router.get('/{category}', status_code=status.HTTP_200_OK, summary="Get flashcard by category")
+@router.get('/by-category/{category}', status_code=status.HTTP_200_OK, summary="Get flashcard by category")
 def register(db: db_dependency ,category: str):
 
     cards_by_category = db.query(FlashCardModel).filter(FlashCardModel.category == category).all()
@@ -82,3 +100,4 @@ def get_flashcards_by_category(db: db_dependency , id: int, update_card_request:
     
     db.commit()
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder({"message": "Flashcard updated successfully"}))
+

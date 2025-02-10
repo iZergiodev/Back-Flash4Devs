@@ -107,7 +107,7 @@ def login(form_data:LoginUserRequest ,db: db_dependency):
         user = authenticate_user(form_data.email, form_data.password, db)
         if not user:
              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user')
-        token = create_token(user.id, timedelta(minutes=20) )
+        token = create_token(user.id, timedelta(minutes=10080) )
         return {'access_token': token, 'token_type': 'bearer'}
 
 @router.get('/user/{user_id}', summary="Get a User by ID")

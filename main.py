@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException # type: ignore
+from pydantic import BaseModel
 import uvicorn  # type: ignore
 from fastapi.security import HTTPBearer  # type: ignore
 from bd.database import engine, Base
@@ -7,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from routers import auth
 from routers import flashcards
+import google.generativeai as genai
 
 
 load_dotenv()
@@ -19,6 +21,14 @@ app = FastAPI(
 )
 
 Base.metadata.create_all(bind=engine)
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise ValueError("La variable de entorno GOOGLE_API_KEY no está definida.")
+
+genai.configure(api_key=GOOGLE_API_KEY)
+
+
 
 app.include_router(auth.router)
 app.include_router(flashcards.router)
@@ -42,7 +52,3 @@ app.add_middleware(
 def read_root():
     return {'Hello': 'world'}
 
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
