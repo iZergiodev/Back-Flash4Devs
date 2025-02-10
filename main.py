@@ -22,7 +22,7 @@ app = FastAPI(
 
 Base.metadata.create_all(bind=engine)
 
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("La variable de entorno GOOGLE_API_KEY no está definida.")
 
