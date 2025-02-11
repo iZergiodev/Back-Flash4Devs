@@ -1,11 +1,12 @@
 import os
 from datetime import timedelta, datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse 
 from pydantic import BaseModel
-from models.models import User as UserModel, Flashcard as FlashCardModel
+from sqlalchemy import func
+from models.models import User as UserModel, Flashcard as FlashCardModel, CodingFlashcard
 from bd.database import SessionLocal
 from passlib.context import CryptContext
 from typing import Annotated
@@ -36,6 +37,11 @@ class CreateCardRequest(BaseModel):
     question: str
     category: str
     solution: str
+    difficult: str
+
+class CreateCodingCardRequest(BaseModel):
+    question: str
+    category: str
     difficult: str
 
 
@@ -84,3 +90,67 @@ def get_flashcards_by_category(db: db_dependency , id: int, update_card_request:
     db.commit()
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder({"message": "Flashcard updated successfully"}))
 
+
+@router.get('/questions')
+def get_random_questions(db: db_dependency, tech: str, limit: int = Query(20)):
+        random_flashcards = (
+            db.query(FlashCardModel)
+            .filter(FlashCardModel.category == tech)
+            .order_by(func.random())
+            .limit(limit)
+            .all()
+        )
+
+        if not random_flashcards:
+            raise HTTPException(status_code=404, detail="No se encontraron flashcards para la categoría especificada")
+        
+        result = [
+            {
+                "id": flashcard.id,
+                "question": flashcard.question,
+                "category": flashcard.category,
+                "solution": flashcard.solution,
+                "difficult": flashcard.difficult,
+            }
+            for flashcard in random_flashcards
+        ]
+        
+        return result
+
+@router.get('/coding-questions')
+def get_random_coding_questions(db: db_dependency, tech: str, limit: int = Query(20)):
+        random_flashcards = (
+            db.query(CodingFlashcard)
+            .filter(CodingFlashcard.category == tech)
+            .order_by(func.random())
+            .limit(limit)
+            .all()
+        )
+
+        if not random_flashcards:
+            raise HTTPException(status_code=404, detail="No se encontraron flashcards para la categoría especificada")
+        
+        result = [
+            {
+                "id": flashcard.id,
+                "question": flashcard.question,
+                "category": flashcard.category,
+                "difficult": flashcard.difficult,
+            }
+            for flashcard in random_flashcards
+        ]
+        
+        return result
+
+
+@router.post('/register-codingcard', status_code=status.HTTP_201_CREATED, summary="Register a flashcard")
+def get_flashcards_by_category(db: db_dependency ,create_card_request: CreateCodingCardRequest):
+
+    newCard = CodingFlashcard(
+        question=create_card_request.question,
+        category=create_card_request.category,
+        difficult = create_card_request.difficult
+    )
+    db.add(newCard)
+    db.commit()
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder({"message": "Coding Flashcard created successfully"}))
