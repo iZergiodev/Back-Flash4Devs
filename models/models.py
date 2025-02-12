@@ -41,7 +41,7 @@ class CustomFlashcard(Base):
     __tablename__ = 'CustomFlashcard'
     id = Column(Integer, primary_key=True, index=True)
     question = Column(String, nullable=False)
-    answer = Column(String, nullable=False)
+    solution = Column(String, nullable=False)
     category = Column(String)
     difficult = Column(String)
 

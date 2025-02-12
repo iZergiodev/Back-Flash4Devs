@@ -175,7 +175,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 class CreateCustomCardRequest(BaseModel):
     question: str
-    answer: str
+    solution: str
     category: str
     difficult: str
 
@@ -187,7 +187,7 @@ def create_custom_flashcard(
 ):
     new_custom_card = CustomFlashcard(
         question=create_card_request.question,
-        answer=create_card_request.answer,
+        solution=create_card_request.solution,
         category=create_card_request.category,
         difficult=create_card_request.difficult,
         owner_id=current_user.id 
@@ -219,7 +219,7 @@ def get_random_custom_questions(db: db_dependency, tech: str, limit: int = Query
             {
                 "id": flashcard.id,
                 "question": flashcard.question,
-                "solution": flashcard.answer,
+                "solution": flashcard.solution,
                 "category": flashcard.category,
                 "difficult": flashcard.difficult,
             }
