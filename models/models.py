@@ -11,12 +11,16 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     name = Column(String)
     last_name = Column(String)
-    level = Column(String)
+    level = Column(String, default='beginner')
     profile_image = Column(String)
+    role = Column(String, default='user')
 
     good_answers = Column(Integer, default=0)
     regular_answers = Column(Integer, default=0)  
-    bad_answers = Column(Integer, default=0) 
+    bad_answers = Column(Integer, default=0)
+
+    rating_interview_front_react = Column(Integer, default=0)
+    rating_interview_backend_python = Column(Integer, default=0)
 
     custom_flashcards = relationship("CustomFlashcard", back_populates="owner", cascade="all, delete-orphan")
      
@@ -47,3 +51,14 @@ class CustomFlashcard(Base):
 
     owner_id = Column(Integer, ForeignKey('User.id'), nullable=False)
     owner = relationship("User", back_populates="custom_flashcards")
+
+class EntrevistaFrontEndReact(Base):
+    __tablename__ = 'frontendreact'
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(String, nullable=False)
+
+
+class EntrevistaBackEndPython(Base):
+    __tablename__ = 'backendpython'
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(String, nullable=False)
