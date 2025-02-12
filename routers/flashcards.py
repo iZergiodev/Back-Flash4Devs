@@ -219,6 +219,7 @@ def get_random_custom_questions(db: db_dependency, tech: str, limit: int = Query
             {
                 "id": flashcard.id,
                 "question": flashcard.question,
+                "solution": flashcard.answer,
                 "category": flashcard.category,
                 "difficult": flashcard.difficult,
             }
