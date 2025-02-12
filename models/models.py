@@ -1,5 +1,6 @@
 from bd.database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 
 
 
@@ -16,6 +17,8 @@ class User(Base):
     good_answers = Column(Integer, default=0)
     regular_answers = Column(Integer, default=0)  
     bad_answers = Column(Integer, default=0) 
+
+    custom_flashcards = relationship("CustomFlashcard", back_populates="owner", cascade="all, delete-orphan")
      
 
 class Flashcard(Base):
@@ -32,3 +35,15 @@ class CodingFlashcard(Base):
     question = Column(String, nullable=False)
     category = Column(String, nullable=False)
     difficult = Column(String, nullable=False)
+
+
+class CustomFlashcard(Base):
+    __tablename__ = 'CustomFlashcard'
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(String, nullable=False)
+    answer = Column(String, nullable=False)
+    category = Column(String)
+    difficult = Column(String)
+
+    owner_id = Column(Integer, ForeignKey('User.id'), nullable=False)
+    owner = relationship("User", back_populates="custom_flashcards")

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from fastapi.responses import JSONResponse 
 from pydantic import BaseModel
 from sqlalchemy import func
-from models.models import User as UserModel, Flashcard as FlashCardModel, CodingFlashcard
+from models.models import CustomFlashcard, User as UserModel, Flashcard as FlashCardModel, CodingFlashcard
 from bd.database import SessionLocal
 from passlib.context import CryptContext
 from typing import Annotated
@@ -154,3 +154,75 @@ def get_flashcards_by_category(db: db_dependency ,create_card_request: CreateCod
     db.add(newCard)
     db.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder({"message": "Coding Flashcard created successfully"}))
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
+        user_id: int = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        return user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+class CreateCustomCardRequest(BaseModel):
+    question: str
+    answer: str
+    category: str
+    difficult: str
+
+@router.post('/register-custom', status_code=status.HTTP_201_CREATED, summary="Create custom card")
+def create_custom_flashcard(
+    create_card_request: CreateCustomCardRequest,
+    db: db_dependency,
+    current_user: UserModel = Depends(get_current_user)
+):
+    new_custom_card = CustomFlashcard(
+        question=create_card_request.question,
+        answer=create_card_request.answer,
+        category=create_card_request.category,
+        difficult=create_card_request.difficult,
+        owner_id=current_user.id 
+    )
+
+    db.add(new_custom_card)
+    db.commit()
+    db.refresh(new_custom_card)
+
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=jsonable_encoder({"message": "Custom Flashcard created successfully"})
+    )
+
+@router.get('/custom-questions')
+def get_random_custom_questions(db: db_dependency, tech: str, limit: int = Query(10)):
+        random_custom_flashcards = (
+            db.query(CustomFlashcard)
+            .filter(CustomFlashcard.category == tech)
+            .order_by(func.random())
+            .limit(limit)
+            .all()
+        )
+
+        if not random_custom_flashcards:
+            raise HTTPException(status_code=404, detail="No se encontraron flashcards para la categoría especificada")
+        
+        result = [
+            {
+                "id": flashcard.id,
+                "question": flashcard.question,
+                "category": flashcard.category,
+                "difficult": flashcard.difficult,
+            }
+            for flashcard in random_custom_flashcards
+        ]
+        
+        return result
