@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from dotenv import load_dotenv
@@ -123,18 +123,29 @@ def update_flashcard(db: db_dependency, id: int, update_card_request: CreateCard
         content=jsonable_encoder({"message": "Flashcard updated successfully"})
     )
 
-@router.get('/questions', summary="Get random flashcards by category")
-def get_random_questions(db: db_dependency, tech: str, limit: int = Query(20)):
+@router.get('/questions', summary="Get random flashcards by category and difficulty")
+def get_random_questions(
+    db: db_dependency,
+    tech: str,
+    difficult: Optional[str] = Query(None, description="Filtrar por dificultad (opcional)"),
+    limit: int = Query(20)
+):
+    query = db.query(FlashCardModel).filter(FlashCardModel.category == tech)
+
+    if difficult:
+        query = query.filter(FlashCardModel.difficult == difficult)
+
     random_flashcards = (
-        db.query(FlashCardModel)
-        .filter(FlashCardModel.category == tech)
-        .order_by(func.random())
+        query.order_by(func.random())
         .limit(limit)
         .all()
     )
 
     if not random_flashcards:
-        raise HTTPException(status_code=404, detail="No flashcards found for the specified category")
+        raise HTTPException(
+            status_code=404,
+            detail="No flashcards found for the specified category and difficulty"
+        )
     
     result = [
         {
@@ -148,6 +159,8 @@ def get_random_questions(db: db_dependency, tech: str, limit: int = Query(20)):
     ]
     
     return result
+
+
 
 # Rutas para Coding Flashcards
 @router.post('/register-codingcard', status_code=status.HTTP_201_CREATED, summary="Register a coding flashcard")
