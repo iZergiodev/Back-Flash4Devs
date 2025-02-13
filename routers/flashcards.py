@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, status, Depends
@@ -37,28 +38,37 @@ db_dependency = Annotated[Session, Depends(get_db)]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Modelos Pydantic para solicitudes
+
+class DifficultyLevel(str, Enum):
+    easy = "easy"
+    medium = "medium"
+    hard = "hard"
+
+
 class CreateCardRequest(BaseModel):
     question: str
     category: str
     solution: str
-    difficult: str
+    difficult: DifficultyLevel
 
 class CreateCodingCardRequest(BaseModel):
     question: str
     category: str
-    difficult: str
+    difficult: DifficultyLevel
 
 class CreateCustomCardRequest(BaseModel):
     question: str
     solution: str
     category: str
-    difficult: str
+    difficult: DifficultyLevel
 
 class CreateFrontendReactQuestionRequest(BaseModel):
     question: str
 
 class CreateBackendPythonQuestionRequest(BaseModel):
     question: str
+
+
 
 # Funciones de utilidad
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -127,7 +137,7 @@ def update_flashcard(db: db_dependency, id: int, update_card_request: CreateCard
 def get_random_questions(
     db: db_dependency,
     tech: str,
-    difficult: Optional[str] = Query(None, description="Filtrar por dificultad (opcional)"),
+    difficult: Optional[DifficultyLevel] = Query(None, description="Filtrar por dificultad (opcional)"),
     limit: int = Query(20)
 ):
     query = db.query(FlashCardModel).filter(FlashCardModel.category == tech)
