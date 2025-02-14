@@ -29,7 +29,6 @@ class Flashcard(Base):
     id = Column(Integer, primary_key=True, index=True)
     question = Column(String, nullable=False)
     category = Column(String, nullable=False)
-    solution = Column(String, nullable=False)
     difficult = Column(String, nullable=False)
 
 class CodingFlashcard(Base):

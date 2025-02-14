@@ -48,7 +48,6 @@ class DifficultyLevel(str, Enum):
 class CreateCardRequest(BaseModel):
     question: str
     category: str
-    solution: str
     difficult: DifficultyLevel
 
 class CreateCodingCardRequest(BaseModel):
@@ -92,7 +91,6 @@ def register_flashcard(db: db_dependency, create_card_request: CreateCardRequest
     new_card = FlashCardModel(
         question=create_card_request.question,
         category=create_card_request.category,
-        solution=create_card_request.solution,
         difficult=create_card_request.difficult
     )
     db.add(new_card)
@@ -124,7 +122,6 @@ def update_flashcard(db: db_dependency, id: int, update_card_request: CreateCard
 
     card_to_update.question = update_card_request.question
     card_to_update.category = update_card_request.category
-    card_to_update.solution = update_card_request.solution
     card_to_update.difficult = update_card_request.difficult
     
     db.commit()
@@ -162,7 +159,6 @@ def get_random_questions(
             "id": flashcard.id,
             "question": flashcard.question,
             "category": flashcard.category,
-            "solution": flashcard.solution,
             "difficult": flashcard.difficult,
         }
         for flashcard in random_flashcards
@@ -187,18 +183,29 @@ def register_coding_flashcard(db: db_dependency, create_card_request: CreateCodi
         content=jsonable_encoder({"message": "Coding Flashcard created successfully"})
     )
 
-@router.get('/coding-questions', summary="Get random coding flashcards by category")
-def get_random_coding_questions(db: db_dependency, tech: str, limit: int = Query(20)):
+@router.get('/coding-questions', summary="Get random coding flashcards by category and difficulty")
+def get_random_coding_questions(
+    db: db_dependency,
+    tech: str,
+    difficult: Optional[DifficultyLevel] = Query(None, description="Filtrar por dificultad (opcional)"),
+    limit: int = Query(20)
+):
+    query = db.query(CodingFlashcard).filter(CodingFlashcard.category == tech)
+
+    if difficult:
+        query = query.filter(CodingFlashcard.difficult == difficult)
+
     random_flashcards = (
-        db.query(CodingFlashcard)
-        .filter(CodingFlashcard.category == tech)
-        .order_by(func.random())
+        query.order_by(func.random())
         .limit(limit)
         .all()
     )
 
     if not random_flashcards:
-        raise HTTPException(status_code=404, detail="No coding flashcards found for the specified category")
+        raise HTTPException(
+            status_code=404,
+            detail="No coding flashcards found for the specified category and difficulty"
+        )
     
     result = [
         {
@@ -281,8 +288,12 @@ def create_frontend_react_question(
     )
 
 @router.get('/frontend-react', status_code=status.HTTP_200_OK, summary="Get all frontend React interview questions")
-def get_all_frontend_react_questions(db: db_dependency):
-    questions = db.query(EntrevistaFrontEndReact).all()
+def get_all_frontend_react_questions(db: db_dependency, limit: int = Query(20)):
+    questions = (
+        db.query(EntrevistaFrontEndReact)
+        .limit(limit)
+        .all()
+    )
     if not questions:
         raise HTTPException(status_code=404, detail="No frontend React questions found")
     
@@ -313,8 +324,12 @@ def create_backend_python_question(
     )
 
 @router.get('/backend-python', status_code=status.HTTP_200_OK, summary="Get all backend Python interview questions")
-def get_all_backend_python_questions(db: db_dependency):
-    questions = db.query(EntrevistaBackEndPython).all()
+def get_all_backend_python_questions(db: db_dependency, limit: int = Query(20)):
+    questions = (
+        db.query(EntrevistaBackEndPython)
+        .limit(limit)
+        .all()
+    )
     if not questions:
         raise HTTPException(status_code=404, detail="No backend Python questions found")
     
