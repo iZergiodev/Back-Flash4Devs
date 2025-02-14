@@ -16,7 +16,6 @@ class User(Base):
     role = Column(String, default='user')
 
     good_answers = Column(Integer, default=0)
-    regular_answers = Column(Integer, default=0)  
     bad_answers = Column(Integer, default=0)
 
     rating_interview_front_react = Column(Integer, default=0)

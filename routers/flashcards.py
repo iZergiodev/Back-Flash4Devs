@@ -332,10 +332,15 @@ def get_all_backend_python_questions(db: db_dependency):
 
 #User Estadísticas
 
+from enum import Enum
+from pydantic import BaseModel
+
+class AnswerType(str, Enum):
+    GOOD = "good"
+    BAD = "bad"
+
 class UpdateUserAnswersRequest(BaseModel):
-    good_answers: int = 0
-    regular_answers: int = 0
-    bad_answers: int = 0
+    type: AnswerType  
 
 @router.put('/update-user-answers', status_code=status.HTTP_200_OK, summary="Update user answers")
 def update_user_answers(
@@ -343,22 +348,21 @@ def update_user_answers(
     db: db_dependency,
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Obtener el usuario actual
+
     user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    # Actualizar las respuestas
-    user.good_answers += update_request.good_answers
-    user.regular_answers += update_request.regular_answers
-    user.bad_answers += update_request.bad_answers
+    if update_request.type == AnswerType.GOOD:
+        user.good_answers += 1
+    elif update_request.type == AnswerType.BAD:
+        user.bad_answers += 1
 
     db.commit()
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder({"message": "User answers updated successfully"})
     )
-
 class UpdateUserLevelRequest(BaseModel):
     level: str
 
