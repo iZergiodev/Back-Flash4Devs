@@ -411,3 +411,25 @@ def update_interview_rating(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder({"message": "Interview rating updated successfully"})
     )
+
+@router.get('/user-stats', status_code=status.HTTP_200_OK, summary="Get all user statistics")
+def get_user_stats(
+    db: db_dependency,
+    current_user: UserModel = Depends(get_current_user)
+):
+    user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    stats = {
+        "good_answers": user.good_answers,
+        "bad_answers": user.bad_answers,
+        "level": user.level,
+        "rating_interview_front_react": user.rating_interview_front_react,
+        "rating_interview_backend_python": user.rating_interview_backend_python,
+    }
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(stats)
+    )
