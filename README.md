@@ -18,6 +18,14 @@ El backend de Flash4Devs fue construido con las siguientes tecnologías:
 
 ---
 
+## 🔗 Api del Proyecto
+
+La API está alojada y disponible para consulta en nuestra documentación oficial, accesible a través del siguiente enlace:
+[https://back-flash4devs-production.up.railway.app/docs#/](https://back-flash4devs-production.up.railway.app/docs#/). 
+Allí encontrarás todos los detalles sobre los endpoints, parámetros y ejemplos de uso.
+
+---
+
 ## 🚀 Cómo Configurar y Ejecutar
 
 Sigue los pasos a continuación para configurar el entorno y ejecutar el backend localmente:
