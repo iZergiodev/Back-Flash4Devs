@@ -17,7 +17,7 @@ load_dotenv()
 app = FastAPI(
     title='Flash4Devs API',
     description='https://github.com/iZergiodev/Flash4Devs',
-    version= '0.0.1'
+    version= '0.0.2'
 )
 
 Base.metadata.create_all(bind=engine)

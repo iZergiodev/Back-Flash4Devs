@@ -39,6 +39,17 @@ class Token(BaseModel):
      access_token: str
      token_type: str
 
+class UpdateUserRequest(BaseModel):
+    email: str | None = None
+    password: str | None = None
+    name: str | None = None
+    last_name: str | None = None
+    role: str | None = None
+    level: str | None = None
+    linkedin: str | None = None
+    github: str | None = None
+    x: str | None = None
+
 def get_db():
     db = SessionLocal()
     try:
@@ -110,12 +121,93 @@ def login(form_data:LoginUserRequest ,db: db_dependency):
         token = create_token(user.id, timedelta(minutes=10080) )
         return {'access_token': token, 'token_type': 'bearer'}
 
+@router.get('/users', summary="Get all users")
+def get_user_by_id( db: db_dependency):
+     user_from_database = db.query(UserModel).all()
+     return user_from_database
+
 @router.get('/user/{user_id}', summary="Get a User by ID")
 def get_user_by_id(user: user_dependency, db: db_dependency, user_id: int):
      if user is None:
           raise HTTPException(status_code=401, detail='Authentification failed')
      user_from_database = db.query(UserModel).filter(UserModel.id == user_id).first()
      return user_from_database
+
+@router.delete('/user/{user_id}', summary="Delete user by ID")
+def delete_user_by_id(user: user_dependency, db: db_dependency, user_id: int):
+     if user is None:
+          raise HTTPException(status_code=401, detail='User not found')
+     current_user = db.query(UserModel).filter(UserModel.id == user['id']).first()
+     if current_user.role != 'admin' and current_user.id != user_id:
+          raise HTTPException(status_code=403, detail='Not authorized to edit this user')
+     user_from_database = db.query(UserModel).filter(UserModel.id == user_id).first()
+     db.delete(user_from_database)
+     db.commit()
+     return {"message": "User deleted successfully", "user_id": user_id}
+
+@router.put('/user/{user_id}', summary="Edit user")
+def update_user(
+    user: user_dependency,
+    db: db_dependency,
+    user_id: int,
+    update_user_request: UpdateUserRequest
+):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication failed')
+
+    # Buscar el usuario en la base de datos
+    user_to_update = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    # Verificar permisos: solo un admin o el propio usuario puede editar
+    current_user = db.query(UserModel).filter(UserModel.id == user['id']).first()
+    if current_user.role != 'admin' and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail='Not authorized to edit this user')
+
+    # Actualizar solo los campos proporcionados en la solicitud
+    if update_user_request.email is not None:
+        # Verificar si el nuevo email ya está en uso por otro usuario
+        existing_user = db.query(UserModel).filter(UserModel.email == update_user_request.email, UserModel.id != user_id).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail='Email already registered')
+        user_to_update.email = update_user_request.email
+
+    if update_user_request.password is not None:
+        user_to_update.hashed_password = bcrypt_context.hash(update_user_request.password)
+
+    if update_user_request.name is not None:
+        user_to_update.name = update_user_request.name
+
+    if update_user_request.last_name is not None:
+        user_to_update.last_name = update_user_request.last_name
+
+    if update_user_request.role is not None:
+        # Opcional: restringir la edición del rol solo a admins
+        if current_user.role != 'admin':
+            raise HTTPException(status_code=403, detail='Only admins can change roles')
+        user_to_update.role = update_user_request.role
+
+    if update_user_request.level is not None:
+        user_to_update.level = update_user_request.level
+
+    if update_user_request.linkedin is not None:
+        user_to_update.linkedin = update_user_request.linkedin
+
+    if update_user_request.github is not None:
+        user_to_update.github = update_user_request.github
+
+    if update_user_request.x is not None:
+        user_to_update.x = update_user_request.x
+
+    # Guardar los cambios en la base de datos
+    db.commit()
+    db.refresh(user_to_update)  # Refrescar el objeto para obtener los datos actualizados
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder({"message": "User updated successfully", "user": user_to_update})
+    )
 
 
 cloudinary.config(
