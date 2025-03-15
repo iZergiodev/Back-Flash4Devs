@@ -100,12 +100,28 @@ def register_flashcard(db: db_dependency, create_card_request: CreateCardRequest
         content=jsonable_encoder({"message": "Flashcard created successfully"})
     )
 
+@router.get('/get-all', status_code=status.HTTP_200_OK, summary="Get all flashcards")
+def get_all_flashcard(db: db_dependency):
+    card = db.query(FlashCardModel).all()
+    if not card:
+        raise HTTPException(status_code=404, detail="Flashcards not found")
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(card))
+
 @router.get('/by-id/{id}', status_code=status.HTTP_200_OK, summary="Get a flashcard by ID")
 def get_flashcard_by_id(db: db_dependency, id: str):
     card = db.query(FlashCardModel).filter(FlashCardModel.id == id).first()
     if not card:
         raise HTTPException(status_code=404, detail="Flashcard not found")
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(card))
+
+@router.delete('/by-id/{id}', status_code=status.HTTP_200_OK, summary="Delete a flashcard by ID")
+def delete_flashcard_by_id(db: db_dependency, id: str):
+    card = db.query(FlashCardModel).filter(FlashCardModel.id == id).first()
+    db.delete(card)
+    db.commit()
+    if not card:
+        raise HTTPException(status_code=404, detail="Flashcard not found")
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder({"message": "Flashcard deleted successfully"}))
 
 @router.get('/by-category/{category}', status_code=status.HTTP_200_OK, summary="Get flashcards by category")
 def get_flashcards_by_category(db: db_dependency, category: str):

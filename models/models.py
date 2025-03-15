@@ -14,6 +14,9 @@ class User(Base):
     level = Column(String, default='beginner')
     profile_image = Column(String)
     role = Column(String, default='user')
+    linkedin = Column(String)
+    github = Column(String)
+    x = Column(String)    
 
     good_answers = Column(Integer, default=0)
     bad_answers = Column(Integer, default=0)
