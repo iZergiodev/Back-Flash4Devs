@@ -19,7 +19,7 @@ Base.metadata.create_all(bind=engine)
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "https://front-flash4-devs.vercel.app/"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "https://back-flash4devs-production.up.railway.app", "https://front-flash4-devs.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
