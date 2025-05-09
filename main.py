@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from routers.auth import verify_token
 from bd.database import get_db, Base, engine
 from models.models import User
+from routers import user
 import os
 from dotenv import load_dotenv
 
@@ -24,6 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(user.router)
 
 # Modelos Pydantic
 class UserCreate(BaseModel):

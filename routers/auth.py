@@ -22,15 +22,35 @@ async def get_jwks() -> Dict:
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict:
     try:
+        token = credentials.credentials
         jwks = await get_jwks()
+        unverified_header = jwt.get_unverified_header(token)
+
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"],
+                }
+                break
+
+        if not rsa_key:
+            raise HTTPException(status_code=401, detail="Chave pública não encontrada no JWKS")
+
         payload = jwt.decode(
-            credentials.credentials,
-            jwks,
+            token,
+            rsa_key,
             algorithms=["RS256"],
             audience=AUTH0_AUDIENCE,
             issuer=f"https://{AUTH0_DOMAIN}/"
         )
+
         return payload
+
     except JWTError as e:
         raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
     except Exception as e:
